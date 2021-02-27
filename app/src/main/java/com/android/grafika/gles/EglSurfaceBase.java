@@ -31,10 +31,13 @@ import java.nio.ByteOrder;
 
 /**
  * Common base class for EGL surfaces.
- * <p>
+ *
  * There can be multiple surfaces associated with a single context.
+ *
+ * 对 EglCore 关于 EGLSurface 的二次封装
  */
 public class EglSurfaceBase {
+
     protected static final String TAG = GlUtil.TAG;
 
     // EglCore object we're associated with.  It may be associated with multiple surfaces.
@@ -49,8 +52,16 @@ public class EglSurfaceBase {
     }
 
     /**
+     *
      * Creates a window surface.
-     * <p>
+     *
+     * EGL 将创建一个新的 EGLSurface 对象，并将其连接到「窗口对象」的 BufferQueue 的生产方接口。
+     * 此后，渲染到该 EGLSurface 会导致一个缓冲区离开队列、进行渲染，然后排队等待消费方使用
+     *
+     * 「窗口对象」在 Android 中，即 Surface
+     *
+     * https://source.android.google.cn/devices/graphics/arch-egl-opengl?hl=zh-cn
+     *
      * @param surface May be a Surface or SurfaceTexture.
      */
     public void createWindowSurface(Object surface) {
@@ -153,6 +164,8 @@ public class EglSurfaceBase {
      * Saves the EGL surface to a file.
      * <p>
      * Expects that this object's EGL surface is current.
+     *
+     * 保存当前帧为图片
      */
     public void saveFrame(File file) throws IOException {
         if (!mEglCore.isCurrent(mEGLSurface)) {
@@ -173,24 +186,20 @@ public class EglSurfaceBase {
 
         String filename = file.toString();
 
+        // GLES20.glReadPixels 将 Surface 中的像素悉数读取
         int width = getWidth();
         int height = getHeight();
-        ByteBuffer buf = ByteBuffer.allocateDirect(width * height * 4);
-        buf.order(ByteOrder.LITTLE_ENDIAN);
-        GLES20.glReadPixels(0, 0, width, height,
-                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buf);
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(width * height * 4);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, byteBuffer);
         GlUtil.checkGlError("glReadPixels");
-        buf.rewind();
+        byteBuffer.rewind();
 
-        BufferedOutputStream bos = null;
-        try {
-            bos = new BufferedOutputStream(new FileOutputStream(filename));
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filename))) {
             Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            bmp.copyPixelsFromBuffer(buf);
+            bmp.copyPixelsFromBuffer(byteBuffer);
             bmp.compress(Bitmap.CompressFormat.PNG, 90, bos);
             bmp.recycle();
-        } finally {
-            if (bos != null) bos.close();
         }
         Log.d(TAG, "Saved " + width + "x" + height + " frame as '" + filename + "'");
     }

@@ -92,6 +92,7 @@ import java.lang.ref.WeakReference;
  * evaluating simultaneous video playback and recording.
  * <p>
  * TODO: show the MP4 file name somewhere in the UI so people can find it in the player
+ * 关于 FBO ： http://vencial.com/opengl/offscreen/rendering
  */
 public class RecordFBOActivity extends Activity implements SurfaceHolder.Callback,
         Choreographer.FrameCallback {

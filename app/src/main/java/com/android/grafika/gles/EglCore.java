@@ -35,6 +35,7 @@ import android.view.Surface;
  * 1.https://www.jianshu.com/p/d5ff1ff4ee2a
  * 2.http://vencial.com/opengl/offscreen/rendering
  * 3.https://hetaodie.github.io/eglMakeCurrent%E5%8F%8A%E5%85%B6%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86
+ * 4.http://www.cnitblog.com/zouzheng/archive/2011/05/30/74326.aspx
  */
 public final class EglCore {
     private static final String TAG = GlUtil.TAG;

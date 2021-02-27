@@ -420,6 +420,7 @@ public class CircularEncoder {
                 Log.d(TAG, "muxer stopped, result=" + result);
             }
             mCallback.fileSaveComplete(result);
+            // MediaScannerConnection.scanFile(mContext, new String[] { outputFile.getAbsolutePath() }, null, null);
         }
 
         /**

@@ -21,10 +21,11 @@ import android.view.Surface;
 
 /**
  * Recordable EGL window surface.
- * <p>
+ *
  * It's good practice to explicitly release() the surface, preferably from a "finally" block.
  */
 public class WindowSurface extends EglSurfaceBase {
+
     private Surface mSurface;
     private boolean mReleaseSurface;
 
@@ -68,8 +69,8 @@ public class WindowSurface extends EglSurfaceBase {
     }
 
     /**
-     * Recreate the EGLSurface, using the new EglBase.  The caller should have already
-     * freed the old EGLSurface with releaseEglSurface().
+     * Recreate the EGLSurface, using the new EglBase(EglCore).
+     * The caller should have already freed the old EGLSurface with releaseEglSurface().
      * <p>
      * This is useful when we want to update the EGLSurface associated with a Surface.
      * For example, if we want to share with a different EGLContext, which can only
