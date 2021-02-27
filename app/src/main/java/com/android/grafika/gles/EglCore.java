@@ -30,6 +30,11 @@ import android.view.Surface;
  * Core EGL state (display, context, config).
  * <p>
  * The EGLContext must only be attached to one thread at a time.  This class is not thread-safe.
+ * 教程：
+ * 0.https://source.android.google.cn/devices/graphics/arch-egl-opengl?hl=zh-cn
+ * 1.https://www.jianshu.com/p/d5ff1ff4ee2a
+ * 2.http://vencial.com/opengl/offscreen/rendering
+ * 3.https://hetaodie.github.io/eglMakeCurrent%E5%8F%8A%E5%85%B6%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86
  */
 public final class EglCore {
     private static final String TAG = GlUtil.TAG;
@@ -80,28 +85,32 @@ public final class EglCore {
             sharedContext = EGL14.EGL_NO_CONTEXT;
         }
 
+        // 1.返回默认的屏幕设备抽象，也有一些其他说法：设备上的底层窗口系统
         mEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
             throw new RuntimeException("unable to get EGL14 display");
         }
+        // 2.初始化屏幕设备抽象，OpenGL 与屏幕设备进行桥接
         int[] version = new int[2];
         if (!EGL14.eglInitialize(mEGLDisplay, version, 0, version, 1)) {
             mEGLDisplay = null;
             throw new RuntimeException("unable to initialize EGL14");
         }
 
+        // 3.获取屏幕设备渲染表面配置 EGLConfig
+        // 4.通过 EGLConfig & EGLDisplay 创建渲染上下文 EGLContext，代表 OpenGL 状态机, OpenGL 指令的执行环境
+        // 换个说法解释下 EGLContext 的作用 -> 存储渲染相关的输入数据
         // Try to get a GLES3 context, if requested.
         if ((flags & FLAG_TRY_GLES3) != 0) {
-            //Log.d(TAG, "Trying GLES 3");
+            Log.d(TAG, "Trying GLES 3");
+            // 确定渲染表面的配置信息，指定 FrameBuffer 的配置项，如色彩格式、像素格式、RGBA 的表示以及 SurfaceType 等
             EGLConfig config = getConfig(flags, 3);
             if (config != null) {
-                int[] attrib3_list = {
+                int[] attrL3list = {
                         EGL14.EGL_CONTEXT_CLIENT_VERSION, 3,
                         EGL14.EGL_NONE
                 };
-                EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext,
-                        attrib3_list, 0);
-
+                EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext, attrL3list, 0);
                 if (EGL14.eglGetError() == EGL14.EGL_SUCCESS) {
                     //Log.d(TAG, "Got GLES 3 config");
                     mEGLConfig = config;
@@ -110,28 +119,30 @@ public final class EglCore {
                 }
             }
         }
-        if (mEGLContext == EGL14.EGL_NO_CONTEXT) {  // GLES 2 only, or GLES 3 attempt failed
-            //Log.d(TAG, "Trying GLES 2");
+
+        // GLES 2 only, or GLES 3 attempt failed
+        if (mEGLContext == EGL14.EGL_NO_CONTEXT) {
+            Log.d(TAG, "Trying GLES 2");
+            // 确定渲染表面的配置信息，即指定 FrameBuffer 的配置项，如色彩格式、像素格式、RGBA 的表示以及 SurfaceType 等
             EGLConfig config = getConfig(flags, 2);
             if (config == null) {
                 throw new RuntimeException("Unable to find a suitable EGLConfig");
             }
-            int[] attrib2_list = {
+            int[] attr2List = {
                     EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
                     EGL14.EGL_NONE
             };
-            EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext,
-                    attrib2_list, 0);
+            EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext, attr2List, 0);
             checkEglError("eglCreateContext");
             mEGLConfig = config;
             mEGLContext = context;
             mGlVersion = 2;
         }
 
+        // 5.通过查询 EGLContext 使用的 EGL 的版本号，来确认最终的创建是否成功
         // Confirm with query.
         int[] values = new int[1];
-        EGL14.eglQueryContext(mEGLDisplay, mEGLContext, EGL14.EGL_CONTEXT_CLIENT_VERSION,
-                values, 0);
+        EGL14.eglQueryContext(mEGLDisplay, mEGLContext, EGL14.EGL_CONTEXT_CLIENT_VERSION, values, 0);
         Log.d(TAG, "EGLContext created, client version " + values[0]);
     }
 
@@ -150,7 +161,7 @@ public final class EglCore {
         // The actual surface is generally RGBA or RGBX, so situationally omitting alpha
         // doesn't really help.  It can also lead to a huge performance hit on glReadPixels()
         // when reading into a GL_RGBA buffer.
-        int[] attribList = {
+        int[] attrList = {
                 EGL14.EGL_RED_SIZE, 8,
                 EGL14.EGL_GREEN_SIZE, 8,
                 EGL14.EGL_BLUE_SIZE, 8,
@@ -162,12 +173,14 @@ public final class EglCore {
                 EGL14.EGL_NONE
         };
         if ((flags & FLAG_RECORDABLE) != 0) {
-            attribList[attribList.length - 3] = EGL_RECORDABLE_ANDROID;
-            attribList[attribList.length - 2] = 1;
+            attrList[attrList.length - 3] = EGL_RECORDABLE_ANDROID;
+            attrList[attrList.length - 2] = 1;
         }
+
+        // 根据指定的 EGLDisplay & 声明的 attrList 来选择合适的 EGLConfig
         EGLConfig[] configs = new EGLConfig[1];
         int[] numConfigs = new int[1];
-        if (!EGL14.eglChooseConfig(mEGLDisplay, attribList, 0, configs, 0, configs.length,
+        if (!EGL14.eglChooseConfig(mEGLDisplay, attrList, 0, configs, 0, configs.length,
                 numConfigs, 0)) {
             Log.w(TAG, "unable to find RGB8888 / " + version + " EGLConfig");
             return null;
@@ -223,47 +236,54 @@ public final class EglCore {
 
     /**
      * Creates an EGL surface associated with a Surface.
-     * <p>
      * If this is destined for MediaCodec, the EGLConfig should have the "recordable" attribute.
+     *
+     * 创建上屏渲染的 EGLSurface，并与传入的 Surface 或 SurfaceTexture 进行关联
+     * Surface 设计来存储渲染相关的输出数据
      */
     public EGLSurface createWindowSurface(Object surface) {
         if (!(surface instanceof Surface) && !(surface instanceof SurfaceTexture)) {
             throw new RuntimeException("invalid surface: " + surface);
         }
-
         // Create a window surface, and attach it to the Surface we received.
-        int[] surfaceAttribs = {
+        int[] surfaceAttributes = {
                 EGL14.EGL_NONE
         };
-        EGLSurface eglSurface = EGL14.eglCreateWindowSurface(mEGLDisplay, mEGLConfig, surface,
-                surfaceAttribs, 0);
+        EGLSurface eglSurface = EGL14.eglCreateWindowSurface(mEGLDisplay, mEGLConfig, surface, surfaceAttributes, 0);
         checkEglError("eglCreateWindowSurface");
         if (eglSurface == null) {
-            throw new RuntimeException("surface was null");
+            throw new RuntimeException("Create window-surface was null");
         }
         return eglSurface;
     }
 
     /**
      * Creates an EGL surface associated with an offscreen buffer.
+     * 创建离屏渲染的 EGLSurface
      */
     public EGLSurface createOffscreenSurface(int width, int height) {
-        int[] surfaceAttribs = {
+        // 指定离屏渲染的 EGLSurface 宽高
+        int[] surfaceAttributes = {
                 EGL14.EGL_WIDTH, width,
                 EGL14.EGL_HEIGHT, height,
                 EGL14.EGL_NONE
         };
-        EGLSurface eglSurface = EGL14.eglCreatePbufferSurface(mEGLDisplay, mEGLConfig,
-                surfaceAttribs, 0);
-        checkEglError("eglCreatePbufferSurface");
+        EGLSurface eglSurface = EGL14.eglCreatePbufferSurface(mEGLDisplay, mEGLConfig, surfaceAttributes, 0);
+        checkEglError("eglCreatePBufferSurface");
         if (eglSurface == null) {
-            throw new RuntimeException("surface was null");
+            throw new RuntimeException("Create offscreen-surface was null");
         }
         return eglSurface;
     }
 
     /**
      * Makes our EGL context current, using the supplied surface for both "draw" and "read".
+     *
+     * 大白话：把上下文 Context、屏幕 Display、还有渲染面 Surface、线程等关联起来
+     *
+     * 1.线程可查其与哪个 Context 绑定，再查 Context 与哪个 surface 进行绑定，从而得出渲染的目标
+     * 2.不能在两个线程里绑定同一个 Context
+     * 3.不能在两个不同的线程里，绑定相同的 Surface 到两个不同的 Context 上
      */
     public void makeCurrent(EGLSurface eglSurface) {
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
@@ -300,7 +320,7 @@ public final class EglCore {
 
     /**
      * Calls eglSwapBuffers.  Use this to "publish" the current frame.
-     *
+     * EGL tell system or window to display this current rendered frame
      * @return false on failure
      */
     public boolean swapBuffers(EGLSurface eglSurface) {
@@ -324,6 +344,8 @@ public final class EglCore {
 
     /**
      * Performs a simple surface query.
+     *
+     * 查询 Surface 中的属性
      */
     public int querySurface(EGLSurface eglSurface, int what) {
         int[] value = new int[1];
