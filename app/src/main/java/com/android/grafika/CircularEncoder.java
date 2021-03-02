@@ -88,8 +88,7 @@ public class CircularEncoder {
      * @param frameRate Expected frame rate.
      * @param desiredSpanSec How many seconds of video we want to have in our buffer at any time.
      */
-    public CircularEncoder(int width, int height, int bitRate, int frameRate, int desiredSpanSec,
-            Callback cb) throws IOException {
+    public CircularEncoder(int width, int height, int bitRate, int frameRate, int desiredSpanSec, Callback cb) throws IOException {
         // The goal is to size the buffer so that we can accumulate N seconds worth of video,
         // where N is passed in as "desiredSpanSec".  If the codec generates data at roughly
         // the requested bit rate, we can compute it as time * bitRate / bitsPerByte.
@@ -103,11 +102,10 @@ public class CircularEncoder {
             throw new RuntimeException("Requested time span is too short: " + desiredSpanSec +
                     " vs. " + (IFRAME_INTERVAL * 2));
         }
-        CircularEncoderBuffer encBuffer = new CircularEncoderBuffer(bitRate, frameRate,
-                desiredSpanSec);
+
+        CircularEncoderBuffer encBuffer = new CircularEncoderBuffer(bitRate, frameRate, desiredSpanSec);
 
         MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, width, height);
-
         // Set some properties.  Failing to specify some of these can cause the MediaCodec
         // configure() call to throw an unhelpful exception.
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
@@ -289,6 +287,7 @@ public class CircularEncoder {
          * Drains all pending output from the decoder, and adds it to the circular buffer.
          */
         public void drainEncoder() {
+
             final int TIMEOUT_USEC = 0;     // no timeout -- check for buffers, bail if none
 
             ByteBuffer[] encoderOutputBuffers = mEncoder.getOutputBuffers();
@@ -332,13 +331,9 @@ public class CircularEncoder {
                         // adjust the ByteBuffer values to match BufferInfo (not needed?)
                         encodedData.position(mBufferInfo.offset);
                         encodedData.limit(mBufferInfo.offset + mBufferInfo.size);
-
-                        mEncBuffer.add(encodedData, mBufferInfo.flags,
-                                mBufferInfo.presentationTimeUs);
-
+                        mEncBuffer.add(encodedData, mBufferInfo.flags, mBufferInfo.presentationTimeUs);
                         if (VERBOSE) {
-                            Log.d(TAG, "sent " + mBufferInfo.size + " bytes to muxer, ts=" +
-                                    mBufferInfo.presentationTimeUs);
+                            Log.d(TAG, "sent " + mBufferInfo.size + " bytes to muxer, ts=" + mBufferInfo.presentationTimeUs);
                         }
                     }
 
@@ -359,10 +354,14 @@ public class CircularEncoder {
          */
         void frameAvailableSoon() {
             if (VERBOSE) Log.d(TAG, "frameAvailableSoon");
+
             drainEncoder();
 
             mFrameNum++;
-            if ((mFrameNum % 10) == 0) {        // TODO: should base off frame rate or clock?
+            if ((mFrameNum % 10) == 0) {
+                // 每 10 帧计算此刻循环队列头尾指针两个 Buffer 的 timeStamp 差值
+                // 即，这 7 秒走过的 105 帧共计多少 us
+                // TODO: should base off frame rate or clock?
                 mCallback.bufferStatus(mEncBuffer.computeTimeSpanUsec());
             }
         }

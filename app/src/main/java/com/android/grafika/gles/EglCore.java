@@ -31,11 +31,13 @@ import android.view.Surface;
  * <p>
  * The EGLContext must only be attached to one thread at a time.  This class is not thread-safe.
  * 教程：
- * 0.https://source.android.google.cn/devices/graphics/arch-egl-opengl?hl=zh-cn
+ * 0.https://source.android.google.cn/devices/graphics/arch-egl-opengl?hl=zh-cn - 必看！
  * 1.https://www.jianshu.com/p/d5ff1ff4ee2a
  * 2.http://vencial.com/opengl/offscreen/rendering
  * 3.https://hetaodie.github.io/eglMakeCurrent%E5%8F%8A%E5%85%B6%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86
  * 4.http://www.cnitblog.com/zouzheng/archive/2011/05/30/74326.aspx
+ * 5.http://zhangtielei.com/posts/blog-opengl-transformations-1.html - 坐标系变换
+ * 6.https://blog.piasy.com/2016/06/07/Open-gl-es-android-2-part-1/index.html
  */
 public final class EglCore {
     private static final String TAG = GlUtil.TAG;
@@ -329,7 +331,10 @@ public final class EglCore {
     }
 
     /**
-     * Sends the presentation time stamp to EGL.  Time is expressed in nanoseconds.
+     * Sends the presentation time stamp to EGL.
+     * Time is expressed in nanoseconds.
+     *
+     * 设置当前帧的时间，单位：纳秒
      */
     public void setPresentationTime(EGLSurface eglSurface, long nsecs) {
         EGLExt.eglPresentationTimeANDROID(mEGLDisplay, eglSurface, nsecs);

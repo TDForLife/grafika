@@ -19,9 +19,14 @@ package com.android.grafika.gles;
 /**
  * This class essentially represents a viewport-sized sprite that will be rendered with
  * a texture, usually from an external source like the camera or video decoder.
+ *
+ * 一个与视窗大小等同的子页面，通常基于像照相机、视频等外部输入源纹理进行渲染
  */
 public class FullFrameRect {
+
     private final Drawable2d mRectDrawable = new Drawable2d(Drawable2d.Prefab.FULL_RECTANGLE);
+
+    // 构造时的入参，注入的 GLES 2D 图形 Program
     private Texture2dProgram mProgram;
 
     /**

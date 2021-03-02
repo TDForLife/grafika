@@ -20,6 +20,8 @@ import java.nio.FloatBuffer;
 
 /**
  * Base class for stuff we like to draw.
+ *
+ * 顶点坐标、纹理坐标的获取
  */
 public class Drawable2d {
     private static final int SIZEOF_FLOAT = 4;

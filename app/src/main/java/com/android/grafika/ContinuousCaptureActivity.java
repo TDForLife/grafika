@@ -59,12 +59,14 @@ import java.lang.ref.WeakReference;
  */
 public class ContinuousCaptureActivity extends Activity implements SurfaceHolder.Callback,
         SurfaceTexture.OnFrameAvailableListener {
+
     private static final String TAG = MainActivity.TAG;
 
     // dimensions for 720p video
-    private static final int VIDEO_WIDTH = 1280;
-    private static final int VIDEO_HEIGHT = 720;
+    private static final int VIDEO_WIDTH = 720;
+    private static final int VIDEO_HEIGHT = 1280;
     private static final int DESIRED_PREVIEW_FPS = 15;
+    private static final int DESIRED_PREVIEW_BIT_RATE = 6000000;
 
     private EglCore mEglCore;
     private WindowSurface mDisplaySurface;
@@ -169,8 +171,8 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_continuous_capture);
 
-        SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
-        SurfaceHolder sh = sv.getHolder();
+        SurfaceView previewSurfaceView = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
+        SurfaceHolder sh = previewSurfaceView.getHolder();
         sh.addCallback(this);
 
         mHandler = new MainHandler(this);
@@ -271,8 +273,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         mCamera.setParameters(parms);
 
         Camera.Size cameraPreviewSize = parms.getPreviewSize();
-        String previewFacts = cameraPreviewSize.width + "x" + cameraPreviewSize.height +
-                " @" + (mCameraPreviewThousandFps / 1000.0f) + "fps";
+        String previewFacts = cameraPreviewSize.width + "x" + cameraPreviewSize.height + " @" + (mCameraPreviewThousandFps / 1000.0f) + "fps";
         Log.i(TAG, "Camera config: " + previewFacts);
 
         AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.continuousCapture_afl);
@@ -308,6 +309,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
      * Updates the current state of the controls.
      */
     private void updateControls() {
+
         String str = getString(R.string.secondsOfVideo, mSecondsOfVideo);
         TextView tv = (TextView) findViewById(R.id.capturedVideoDesc_text);
         tv.setText(str);
@@ -331,14 +333,16 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         }
 
         // The button is disabled in onCreate(), and not enabled until the encoder and output
-        // surface is ready, so it shouldn't be possible to get here with a null mCircEncoder.
+        // surface is ready, so it shouldn't be possible to get here with a null mCircleEncoder.
         mFileSaveInProgress = true;
+
         updateControls();
+
         TextView tv = (TextView) findViewById(R.id.recording_text);
         String str = getString(R.string.nowSaving);
         tv.setText(str);
 
-
+        // 开始保存 MediaEncoder 的数据
         mCircleEncoder.saveVideo(mOutputFile);
     }
 
@@ -348,7 +352,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
     private void fileSaveComplete(int status) {
         Log.d(TAG, "fileSaveComplete " + status);
         if (!mFileSaveInProgress) {
-            throw new RuntimeException("WEIRD: got fileSaveCmplete when not in progress");
+            throw new RuntimeException("WEIRD: got fileSaveComplete when not in progress");
         }
         mFileSaveInProgress = false;
         updateControls();
@@ -389,8 +393,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
         mDisplaySurface.makeCurrent();
 
-        mFullFrameBlit = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+        mFullFrameBlit = new FullFrameRect(new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
         mTextureId = mFullFrameBlit.createTextureObject();
         mCameraTexture = new SurfaceTexture(mTextureId);
         mCameraTexture.setOnFrameAvailableListener(this);
@@ -413,11 +416,12 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         // TODO: adjust video width/height based on what we're getting from the camera preview?
         //       (can we guarantee that camera preview size is compatible with AVC video encoder?)
         try {
-            mCircleEncoder = new CircularEncoder(VIDEO_WIDTH, VIDEO_HEIGHT, 6000000,
+            mCircleEncoder = new CircularEncoder(VIDEO_WIDTH, VIDEO_HEIGHT, DESIRED_PREVIEW_BIT_RATE,
                     mCameraPreviewThousandFps / 1000, 7, mHandler);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
+
         mEncoderSurface = new WindowSurface(mEglCore, mCircleEncoder.getInputSurface(), true);
 
         updateControls();
@@ -438,19 +442,6 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
         //Log.d(TAG, "frame available");
         mHandler.sendEmptyMessage(MainHandler.MSG_FRAME_AVAILABLE);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (!PermissionHelper.hasCameraPermission(this)) {
-            Toast.makeText(this,
-                    "Camera permission is needed to run this application", Toast.LENGTH_LONG).show();
-            PermissionHelper.launchPermissionSettings(this);
-            finish();
-        } else {
-            openCamera(VIDEO_WIDTH, VIDEO_HEIGHT, DESIRED_PREVIEW_FPS);
-        }
     }
 
     /**
@@ -477,9 +468,9 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         mCameraTexture.getTransformMatrix(mTmpMatrix);
 
         // Fill the SurfaceView with it.
-        SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
-        int viewWidth = sv.getWidth();
-        int viewHeight = sv.getHeight();
+        SurfaceView previewSurfaceView = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
+        int viewWidth = previewSurfaceView.getWidth();
+        int viewHeight = previewSurfaceView.getHeight();
         GLES20.glViewport(0, 0, viewWidth, viewHeight);
         mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
         drawExtra(mFrameNum, viewWidth, viewHeight);
@@ -501,6 +492,8 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
 
     /**
      * Adds a bit of extra stuff to the display just to give it flavor.
+     *
+     * 底部不断向右偏移的色块
      */
     private static void drawExtra(int frameNum, int width, int height) {
         // We "draw" with the scissor rect and clear calls.  Note this uses window coordinates.
@@ -513,8 +506,30 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
 
         int xpos = (int) (width * ((frameNum % 100) / 100.0f));
         GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
-        GLES20.glScissor(xpos, 0, width / 32, height / 32);
+        GLES20.glScissor(xpos, 0, width / 32, height / 32); // Scissor ???
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (!PermissionHelper.hasCameraPermission(this)) {
+            Toast.makeText(this,
+                    "Camera permission is needed to run this application", Toast.LENGTH_LONG).show();
+            PermissionHelper.launchPermissionSettings(this);
+            finish();
+        } else {
+            openCamera(VIDEO_WIDTH, VIDEO_HEIGHT, DESIRED_PREVIEW_FPS);
+        }
+    }
+
+    private void logFloatArray(float[] floatArray) {
+        StringBuilder builder = new StringBuilder();
+        for (float element : floatArray) {
+            builder.append(element).append(", ");
+        }
+        builder.deleteCharAt(builder.toString().length() - 1);
+        Log.d(TAG, "FloatArray is " + builder.toString());
     }
 }

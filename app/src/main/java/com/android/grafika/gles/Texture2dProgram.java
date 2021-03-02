@@ -24,6 +24,8 @@ import java.nio.FloatBuffer;
 
 /**
  * GL program and supporting functions for textured 2D shapes.
+ *
+ * GL 绘制教程：https://blog.piasy.com/2016/06/07/Open-gl-es-android-2-part-1/index.html
  */
 public class Texture2dProgram {
     private static final String TAG = GlUtil.TAG;
@@ -32,6 +34,7 @@ public class Texture2dProgram {
         TEXTURE_2D, TEXTURE_EXT, TEXTURE_EXT_BW, TEXTURE_EXT_FILT
     }
 
+    // 关于 GLSL 中的变量类型：https://blog.csdn.net/jackers679/article/details/6848085
     // Simple vertex shader, used for all programs.
     private static final String VERTEX_SHADER =
             "uniform mat4 uMVPMatrix;\n" +

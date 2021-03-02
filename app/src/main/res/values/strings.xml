@@ -73,7 +73,7 @@
     <string name="glesVersionValue">"?"</string>
     <string name="useBlitFramebuffer">Use glBlitFramebuffer() when recording</string>
     <string name="nowRecording">" [RECORDING]"</string>
-    <string name="nowSaving">" [saving]"</string>
+    <string name="nowSaving">" [SAVING]"</string>
     <string name="recDrawTwice">Rec: draw twice</string>
     <string name="recOffscreen">Rec: FBO blit x2</string>
     <string name="recFramebuffer">Rec: glBlitFramebuffer [hosed]</string>

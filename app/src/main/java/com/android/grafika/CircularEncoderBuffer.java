@@ -46,10 +46,12 @@ public class CircularEncoderBuffer {
     // we can just do an allocation and data copy (we know it happens at most once per file
     // save operation).
     private ByteBuffer mDataBufferWrapper;
+    // 用来存储7秒输出的字节缓冲, desiredSpanSec 默认入参值为 7
     private byte[] mDataBuffer;
 
     // Meta-data held here.  We're using a collection of arrays, rather than an array of
     // objects with multiple fields, to minimize allocations and heap footprint.
+    // 持有一个包含目标属性的对象数组，还不如使用几个独立表示单一属性的数组集合
     private int[] mPacketFlags;
     private long[] mPacketPtsUsec;
     private int[] mPacketStart;
@@ -68,6 +70,7 @@ public class CircularEncoderBuffer {
         //
         // There would be a minor performance advantage to using a power of two here, because
         // not all ARM CPUs support integer modulus.
+        // 8 比特位 1 个字节
         int dataBufferSize = bitRate * desiredSpanSec / 8;
         mDataBuffer = new byte[dataBufferSize];
         mDataBufferWrapper = ByteBuffer.wrap(mDataBuffer);
@@ -75,7 +78,7 @@ public class CircularEncoderBuffer {
         // Meta-data is smaller than encoded data for non-trivial frames, so we over-allocate
         // a bit.  This should ensure that we drop packets because we ran out of (expensive)
         // data storage rather than (inexpensive) metadata storage.
-        int metaBufferCount = frameRate * desiredSpanSec * 2;
+        int metaBufferCount = frameRate * desiredSpanSec * 2; // 15 * 7 * 2 = 210
         mPacketFlags = new int[metaBufferCount];
         mPacketPtsUsec = new long[metaBufferCount];
         mPacketStart = new int[metaBufferCount];
@@ -93,15 +96,15 @@ public class CircularEncoderBuffer {
      * time stamps.
      */
     public long computeTimeSpanUsec() {
-        final int metaLen = mPacketStart.length;
-
+        final int metaLength = mPacketStart.length;
         if (mMetaHead == mMetaTail) {
             // empty list
             return 0;
         }
 
         // head points to the next available node, so grab the previous one
-        int beforeHead = (mMetaHead + metaLen - 1) % metaLen;
+        int beforeHead = (mMetaHead + metaLength - 1) % metaLength;
+
         return mPacketPtsUsec[beforeHead] - mPacketPtsUsec[mMetaTail];
     }
 
@@ -110,8 +113,7 @@ public class CircularEncoderBuffer {
      *
      * @param buf The data.  Set position() to the start offset and limit() to position+size.
      *     The position and limit may be altered by this method.
-     * @param size Number of bytes in the packet.
-     * @param flags MediaCodec.BufferInfo flags.
+     * @param flags MediaCodec.BufferInfo flags
      * @param ptsUsec Presentation time stamp, in microseconds.
      */
     public void add(ByteBuffer buf, int flags, long ptsUsec) {
