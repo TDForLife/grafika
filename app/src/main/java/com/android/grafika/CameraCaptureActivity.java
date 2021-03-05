@@ -201,7 +201,8 @@ public class CameraCaptureActivity extends Activity
 
         mGLView.onResume();
         mGLView.queueEvent(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 mRenderer.setCameraPreviewSize(mCameraPreviewWidth, mCameraPreviewHeight);
             }
         });
@@ -214,7 +215,8 @@ public class CameraCaptureActivity extends Activity
         super.onPause();
         releaseCamera();
         mGLView.queueEvent(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 // Tell the renderer that it's about to be paused so it can clean up.
                 mRenderer.notifyPausing();
             }
@@ -243,6 +245,7 @@ public class CameraCaptureActivity extends Activity
 
         }
     }
+
     // spinner selected
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
@@ -251,14 +254,17 @@ public class CameraCaptureActivity extends Activity
 
         Log.d(TAG, "onItemSelected: " + filterNum);
         mGLView.queueEvent(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 // notify the renderer that we want to change the encoder's state
                 mRenderer.changeFilterMode(filterNum);
             }
         });
     }
 
-    @Override public void onNothingSelected(AdapterView<?> parent) {}
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+    }
 
     /**
      * Opens a camera, and attempts to establish preview mode at the specified width and height.
@@ -319,13 +325,13 @@ public class CameraCaptureActivity extends Activity
 
         AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.cameraPreview_afl);
 
-        Display display = ((WindowManager)getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
+        Display display = ((WindowManager) getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
 
-        if(display.getRotation() == Surface.ROTATION_0) {
+        if (display.getRotation() == Surface.ROTATION_0) {
             mCamera.setDisplayOrientation(90);
             layout.setAspectRatio((double) mCameraPreviewHeight / mCameraPreviewWidth);
-        } else if(display.getRotation() == Surface.ROTATION_270) {
-            layout.setAspectRatio((double) mCameraPreviewHeight/ mCameraPreviewWidth);
+        } else if (display.getRotation() == Surface.ROTATION_270) {
+            layout.setAspectRatio((double) mCameraPreviewHeight / mCameraPreviewWidth);
             mCamera.setDisplayOrientation(180);
         } else {
             // Set the preview aspect ratio.
@@ -351,7 +357,8 @@ public class CameraCaptureActivity extends Activity
     public void clickToggleRecording(@SuppressWarnings("unused") View unused) {
         mRecordingEnabled = !mRecordingEnabled;
         mGLView.queueEvent(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 // notify the renderer that we want to change the encoder's state
                 mRenderer.changeRecordingState(mRecordingEnabled);
             }
@@ -498,12 +505,13 @@ class CameraSurfaceRenderer implements GLSurfaceView.Renderer {
     /**
      * Constructs CameraSurfaceRenderer.
      * <p>
+     *
      * @param cameraHandler Handler for communicating with UI thread
-     * @param movieEncoder video encoder object
-     * @param outputFile output file for encoded video; forwarded to movieEncoder
+     * @param movieEncoder  video encoder object
+     * @param outputFile    output file for encoded video; forwarded to movieEncoder
      */
     public CameraSurfaceRenderer(CameraCaptureActivity.CameraHandler cameraHandler,
-            TextureMovieEncoder movieEncoder, File outputFile) {
+                                 TextureMovieEncoder movieEncoder, File outputFile) {
         mCameraHandler = cameraHandler;
         mVideoEncoder = movieEncoder;
         mOutputFile = outputFile;
@@ -576,31 +584,31 @@ class CameraSurfaceRenderer implements GLSurfaceView.Renderer {
                 break;
             case CameraCaptureActivity.FILTER_BLUR:
                 programType = Texture2dProgram.ProgramType.TEXTURE_EXT_FILT;
-                kernel = new float[] {
-                        1f/16f, 2f/16f, 1f/16f,
-                        2f/16f, 4f/16f, 2f/16f,
-                        1f/16f, 2f/16f, 1f/16f };
+                kernel = new float[]{
+                        1f / 16f, 2f / 16f, 1f / 16f,
+                        2f / 16f, 4f / 16f, 2f / 16f,
+                        1f / 16f, 2f / 16f, 1f / 16f};
                 break;
             case CameraCaptureActivity.FILTER_SHARPEN:
                 programType = Texture2dProgram.ProgramType.TEXTURE_EXT_FILT;
-                kernel = new float[] {
+                kernel = new float[]{
                         0f, -1f, 0f,
                         -1f, 5f, -1f,
-                        0f, -1f, 0f };
+                        0f, -1f, 0f};
                 break;
             case CameraCaptureActivity.FILTER_EDGE_DETECT:
                 programType = Texture2dProgram.ProgramType.TEXTURE_EXT_FILT;
-                kernel = new float[] {
+                kernel = new float[]{
                         -1f, -1f, -1f,
                         -1f, 8f, -1f,
-                        -1f, -1f, -1f };
+                        -1f, -1f, -1f};
                 break;
             case CameraCaptureActivity.FILTER_EMBOSS:
                 programType = Texture2dProgram.ProgramType.TEXTURE_EXT_FILT;
-                kernel = new float[] {
+                kernel = new float[]{
                         2f, 0f, 0f,
                         0f, -1f, 0f,
-                        0f, 0f, -1f };
+                        0f, 0f, -1f};
                 colorAdj = 0.5f;
                 break;
             default:

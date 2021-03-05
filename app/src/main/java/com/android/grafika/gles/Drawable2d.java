@@ -22,12 +22,16 @@ import java.nio.FloatBuffer;
  * Base class for stuff we like to draw.
  *
  * 顶点坐标、纹理坐标的获取
+ *
+ * 参考资料：https://blog.piasy.com/2017/10/06/Open-gl-es-android-2-part-3/index.html
  */
 public class Drawable2d {
+
     private static final int SIZEOF_FLOAT = 4;
 
     /**
      * Simple equilateral triangle (1.0 per side).  Centered on (0,0).
+     * 定义顶点和纹理坐标，两者的顺序必须一一对应
      */
     private static final float TRIANGLE_COORDS[] = {
          0.0f,  0.577350269f,   // 0 top
@@ -39,10 +43,8 @@ public class Drawable2d {
         0.0f, 1.0f,     // 1 bottom left
         1.0f, 1.0f,     // 2 bottom right
     };
-    private static final FloatBuffer TRIANGLE_BUF =
-            GlUtil.createFloatBuffer(TRIANGLE_COORDS);
-    private static final FloatBuffer TRIANGLE_TEX_BUF =
-            GlUtil.createFloatBuffer(TRIANGLE_TEX_COORDS);
+    private static final FloatBuffer TRIANGLE_BUF = GlUtil.createFloatBuffer(TRIANGLE_COORDS);
+    private static final FloatBuffer TRIANGLE_TEX_BUF = GlUtil.createFloatBuffer(TRIANGLE_TEX_COORDS);
 
     /**
      * Simple square, specified as a triangle strip.  The square is centered on (0,0) and has
@@ -56,22 +58,21 @@ public class Drawable2d {
         -0.5f,  0.5f,   // 2 top left
          0.5f,  0.5f,   // 3 top right
     };
+    // 为何不是 0.5 为单位
     private static final float RECTANGLE_TEX_COORDS[] = {
         0.0f, 1.0f,     // 0 bottom left
         1.0f, 1.0f,     // 1 bottom right
         0.0f, 0.0f,     // 2 top left
         1.0f, 0.0f      // 3 top right
     };
-    private static final FloatBuffer RECTANGLE_BUF =
-            GlUtil.createFloatBuffer(RECTANGLE_COORDS);
-    private static final FloatBuffer RECTANGLE_TEX_BUF =
-            GlUtil.createFloatBuffer(RECTANGLE_TEX_COORDS);
+    private static final FloatBuffer RECTANGLE_BUF = GlUtil.createFloatBuffer(RECTANGLE_COORDS);
+    private static final FloatBuffer RECTANGLE_TEX_BUF = GlUtil.createFloatBuffer(RECTANGLE_TEX_COORDS);
 
     /**
-     * A "full" square, extending from -1 to +1 in both dimensions.  When the model/view/projection
-     * matrix is identity, this will exactly cover the viewport.
+     * A "full" square, extending from -1 to +1 in both dimensions.
+     * When the model/view/projection matrix is identity, this will exactly cover the viewport.
      * <p>
-     * The texture coordinates are Y-inverted relative to RECTANGLE.  (This seems to work out
+     * The texture coordinates are Y-inverted（倒 Y）relative to RECTANGLE.  (This seems to work out
      * right with external textures from SurfaceTexture.)
      */
     private static final float FULL_RECTANGLE_COORDS[] = {
@@ -86,19 +87,22 @@ public class Drawable2d {
         0.0f, 1.0f,     // 2 top left
         1.0f, 1.0f      // 3 top right
     };
-    private static final FloatBuffer FULL_RECTANGLE_BUF =
-            GlUtil.createFloatBuffer(FULL_RECTANGLE_COORDS);
-    private static final FloatBuffer FULL_RECTANGLE_TEX_BUF =
-            GlUtil.createFloatBuffer(FULL_RECTANGLE_TEX_COORDS);
+    private static final FloatBuffer FULL_RECTANGLE_BUF = GlUtil.createFloatBuffer(FULL_RECTANGLE_COORDS);
+    private static final FloatBuffer FULL_RECTANGLE_TEX_BUF = GlUtil.createFloatBuffer(FULL_RECTANGLE_TEX_COORDS);
 
 
-    private FloatBuffer mVertexArray;
-    private FloatBuffer mTexCoordArray;
-    private int mVertexCount;
-    private int mCoordsPerVertex;
-    private int mVertexStride;
-    private int mTexCoordStride;
-    private Prefab mPrefab;
+    // 图形顶点坐标数组（ByteBuffer）
+    private final FloatBuffer mVertexArray;
+    // 图形纹理坐标数组（ByteBuffer）
+    private final FloatBuffer mTexCoordArray;
+    // 图形总的顶点数
+    private final int mVertexCount;
+    // 每个顶点的坐标数
+    private final int mCoordCountPerVertex;
+    // 顶点与顶点间的字节步长，即两个顶点之间相距 8 个字节
+    private final int mVertexByteStride;
+    private final int mTexCoordByteStride;
+    private final Prefab mPrefab;
 
     /**
      * Enum values for constructor.
@@ -117,28 +121,26 @@ public class Drawable2d {
             case TRIANGLE:
                 mVertexArray = TRIANGLE_BUF;
                 mTexCoordArray = TRIANGLE_TEX_BUF;
-                mCoordsPerVertex = 2;
-                mVertexStride = mCoordsPerVertex * SIZEOF_FLOAT;
-                mVertexCount = TRIANGLE_COORDS.length / mCoordsPerVertex;
+                mCoordCountPerVertex = 2;
+                mVertexCount = TRIANGLE_COORDS.length / mCoordCountPerVertex;
                 break;
             case RECTANGLE:
                 mVertexArray = RECTANGLE_BUF;
                 mTexCoordArray = RECTANGLE_TEX_BUF;
-                mCoordsPerVertex = 2;
-                mVertexStride = mCoordsPerVertex * SIZEOF_FLOAT;
-                mVertexCount = RECTANGLE_COORDS.length / mCoordsPerVertex;
+                mCoordCountPerVertex = 2;
+                mVertexCount = RECTANGLE_COORDS.length / mCoordCountPerVertex;
                 break;
             case FULL_RECTANGLE:
                 mVertexArray = FULL_RECTANGLE_BUF;
                 mTexCoordArray = FULL_RECTANGLE_TEX_BUF;
-                mCoordsPerVertex = 2;
-                mVertexStride = mCoordsPerVertex * SIZEOF_FLOAT;
-                mVertexCount = FULL_RECTANGLE_COORDS.length / mCoordsPerVertex;
+                mCoordCountPerVertex = 2;
+                mVertexCount = FULL_RECTANGLE_COORDS.length / mCoordCountPerVertex;
                 break;
             default:
                 throw new RuntimeException("Unknown shape " + shape);
         }
-        mTexCoordStride = 2 * SIZEOF_FLOAT;
+        mVertexByteStride = mCoordCountPerVertex * SIZEOF_FLOAT;
+        mTexCoordByteStride = mCoordCountPerVertex * SIZEOF_FLOAT;
         mPrefab = shape;
     }
 
@@ -171,21 +173,21 @@ public class Drawable2d {
      * Returns the width, in bytes, of the data for each vertex.
      */
     public int getVertexStride() {
-        return mVertexStride;
+        return mVertexByteStride;
     }
 
     /**
      * Returns the width, in bytes, of the data for each texture coordinate.
      */
     public int getTexCoordStride() {
-        return mTexCoordStride;
+        return mTexCoordByteStride;
     }
 
     /**
      * Returns the number of position coordinates per vertex.  This will be 2 or 3.
      */
     public int getCoordsPerVertex() {
-        return mCoordsPerVertex;
+        return mCoordCountPerVertex;
     }
 
     @Override

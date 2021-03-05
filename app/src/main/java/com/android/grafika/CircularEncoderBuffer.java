@@ -46,7 +46,7 @@ public class CircularEncoderBuffer {
     // we can just do an allocation and data copy (we know it happens at most once per file
     // save operation).
     private ByteBuffer mDataBufferWrapper;
-    // 用来存储7秒输出的字节缓冲, desiredSpanSec 默认入参值为 7
+    // 用来存储 7 秒输出的字节缓冲, desiredSpanSec 默认入参值为 7
     private byte[] mDataBuffer;
 
     // Meta-data held here.  We're using a collection of arrays, rather than an array of

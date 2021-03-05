@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.grafika;
+package com.android.grafika.gles;
 
-import android.util.Log;
-
-import com.android.grafika.gles.Drawable2d;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -28,7 +25,6 @@ import java.nio.FloatBuffer;
  * "zoom" effect.
  */
 public class ScaledDrawable2d extends Drawable2d {
-    private static final String TAG = MainActivity.TAG;
 
     private static final int SIZEOF_FLOAT = 4;
 

@@ -288,7 +288,8 @@ public class CircularEncoder {
          */
         public void drainEncoder() {
 
-            final int TIMEOUT_USEC = 0;     // no timeout -- check for buffers, bail if none
+            // no timeout -- check for buffers, bail if none
+            final int TIMEOUT_USEC = 0;
 
             ByteBuffer[] encoderOutputBuffers = mEncoder.getOutputBuffers();
             while (true) {

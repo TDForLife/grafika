@@ -16,11 +16,12 @@
 
 package com.android.grafika;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
@@ -89,6 +90,8 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
     private MainHandler mHandler;
     private float mSecondsOfVideo;
 
+    private SurfaceView mPreviewSurfaceView;
+
     /**
      * Custom message handler for main UI thread.
      * <p>
@@ -130,7 +133,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
             switch (msg.what) {
                 // 通过控制 [RECORDING...] 显影属性来控制其闪烁
                 case MSG_BLINK_TEXT: {
-                    TextView tv = (TextView) activity.findViewById(R.id.recording_text);
+                    TextView tv = activity.findViewById(R.id.recording_text);
 
                     // Attempting to make it blink by using setEnabled() doesn't work --
                     // it just changes the color.  We want to change the visibility.
@@ -171,14 +174,14 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_continuous_capture);
 
-        SurfaceView previewSurfaceView = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
-        SurfaceHolder sh = previewSurfaceView.getHolder();
+        mPreviewSurfaceView = findViewById(R.id.continuousCapture_surfaceView);
+        SurfaceHolder sh = mPreviewSurfaceView.getHolder();
         sh.addCallback(this);
 
         mHandler = new MainHandler(this);
         mHandler.sendEmptyMessageDelayed(MainHandler.MSG_BLINK_TEXT, 1500);
 
-        mOutputFile = new File(Environment.getExternalStorageDirectory(), "continuous-capture.mp4");
+        mOutputFile = new File(getFilesDir(), "continuous-capture.mp4");
         mSecondsOfVideo = 0.0f;
         updateControls();
     }
@@ -276,7 +279,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         String previewFacts = cameraPreviewSize.width + "x" + cameraPreviewSize.height + " @" + (mCameraPreviewThousandFps / 1000.0f) + "fps";
         Log.i(TAG, "Camera config: " + previewFacts);
 
-        AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.continuousCapture_afl);
+        AspectFrameLayout layout = findViewById(R.id.continuousCapture_afl);
 
         Display display = ((WindowManager)getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
 
@@ -338,11 +341,12 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
 
         updateControls();
 
-        TextView tv = (TextView) findViewById(R.id.recording_text);
+        TextView tv = findViewById(R.id.recording_text);
         String str = getString(R.string.nowSaving);
         tv.setText(str);
 
         // 开始保存 MediaEncoder 的数据
+        // 保存的数据范围，仅仅是循环队列里面的，固定时长的 Buffer
         mCircleEncoder.saveVideo(mOutputFile);
     }
 
@@ -356,7 +360,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         }
         mFileSaveInProgress = false;
         updateControls();
-        TextView tv = (TextView) findViewById(R.id.recording_text);
+        TextView tv = findViewById(R.id.recording_text);
         String str = getString(R.string.nowRecording);
         tv.setText(str);
 
@@ -468,9 +472,8 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         mCameraTexture.getTransformMatrix(mTmpMatrix);
 
         // Fill the SurfaceView with it.
-        SurfaceView previewSurfaceView = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
-        int viewWidth = previewSurfaceView.getWidth();
-        int viewHeight = previewSurfaceView.getHeight();
+        int viewWidth = mPreviewSurfaceView.getWidth();
+        int viewHeight = mPreviewSurfaceView.getHeight();
         GLES20.glViewport(0, 0, viewWidth, viewHeight);
         mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
         drawExtra(mFrameNum, viewWidth, viewHeight);
@@ -493,7 +496,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
     /**
      * Adds a bit of extra stuff to the display just to give it flavor.
      *
-     * 底部不断向右偏移的色块
+     * 底部不断向右运动的色块
      */
     private static void drawExtra(int frameNum, int width, int height) {
         // We "draw" with the scissor rect and clear calls.  Note this uses window coordinates.

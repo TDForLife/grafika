@@ -56,8 +56,7 @@ public class Texture2dProgram {
             "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
             "}\n";
 
-    // Simple fragment shader for use with external 2D textures (e.g. what we get from
-    // SurfaceTexture).
+    // Simple fragment shader for use with external 2D textures (e.g. what we get from SurfaceTexture).
     private static final String FRAGMENT_SHADER_EXT =
             "#extension GL_OES_EGL_image_external : require\n" +
             "precision mediump float;\n" +
