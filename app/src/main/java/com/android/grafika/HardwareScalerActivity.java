@@ -16,6 +16,7 @@
 
 package com.android.grafika;
 
+import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.os.Bundle;
@@ -159,8 +160,8 @@ public class HardwareScalerActivity extends Activity implements SurfaceHolder.Ca
         // Some controls include text based on the view dimensions, so update now.
         updateControls();
 
-        SurfaceView sv = (SurfaceView) findViewById(R.id.hardwareScaler_surfaceView);
-        mRenderThread = new RenderThread(sv.getHolder());
+        SurfaceView sv = findViewById(R.id.hardwareScaler_surfaceView);
+        mRenderThread = new RenderThread(sv.getHolder(), this);
         mRenderThread.setName("HardwareScaler GL render");
         mRenderThread.start();
         mRenderThread.waitUntilReady();
@@ -347,13 +348,14 @@ public class HardwareScalerActivity extends Activity implements SurfaceHolder.Ca
         // Previous frame time.
         private long mPrevTimeNanos;
 
+        private Context mContext;
 
         /**
          * Pass in the SurfaceView's SurfaceHolder.  Note the Surface may not yet exist.
          */
-        public RenderThread(SurfaceHolder holder) {
+        public RenderThread(SurfaceHolder holder, Context context) {
             mSurfaceHolder = holder;
-
+            mContext = context;
             mIdentityMatrix = new float[16];
             Matrix.setIdentityM(mIdentityMatrix, 0);
 
@@ -443,7 +445,9 @@ public class HardwareScalerActivity extends Activity implements SurfaceHolder.Ca
             // Programs used for drawing onto the screen.
             mFlatProgram = new FlatShadedProgram();
             mTexProgram = new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D);
-            mCoarseTexture = GeneratedTexture.createTestTexture(GeneratedTexture.Image.COARSE);
+//            mCoarseTexture = GeneratedTexture.createTestTexture(GeneratedTexture.Image.COARSE);
+//            mFineTexture = GeneratedTexture.createTestTexture(GeneratedTexture.Image.FINE);
+            mCoarseTexture = GeneratedTexture.generateCustomData(mContext);
             mFineTexture = GeneratedTexture.createTestTexture(GeneratedTexture.Image.FINE);
 
             // Set the background color.

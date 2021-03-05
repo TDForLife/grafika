@@ -16,7 +16,13 @@
 
 package com.android.grafika.gles;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
+
+import com.android.grafika.R;
 
 import java.nio.ByteBuffer;
 
@@ -161,6 +167,12 @@ public class GeneratedTexture {
         byteBuf.put(buf);
         byteBuf.position(0);
         return byteBuf;
+    }
+
+    public static int generateCustomData(Context context) {
+        Resources res = context.getResources();
+        Bitmap bmp = BitmapFactory.decodeResource(res, R.drawable.ic_launcher);
+        return GlUtil.loadTexture(bmp);
     }
 
     private static void checkerPattern(byte[] buf, int left, int top, int right, int bottom,
